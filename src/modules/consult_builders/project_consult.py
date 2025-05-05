@@ -23,8 +23,7 @@ def consult_project_in_geoex(
         gxbot (str): GXBot ID for the request.
 
     Returns:
-        dict (ConsultProjectBudgetInGeoexReturn): A dataclass object
-        containing the response status and body.
+        dict: A object containing the response status and body.
     """
     scraper = cloudscraper.create_scraper()
 
