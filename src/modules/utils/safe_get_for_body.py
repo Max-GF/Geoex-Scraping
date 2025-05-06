@@ -1,7 +1,11 @@
 """
     This module provides a utility function to safely access nested dictionary or list elements.
 """
-def safe_get(response_dict : dict, keys : str, default:str | None =None):
+def safe_get(
+    response_dict : dict | None,
+    keys : list[str],
+    default:str | None =None
+    ):
     """
     Safely get a value from a nested dictionary or list using a list of keys.
     This function allows for safe traversal of nested structures, returning a default value if any key is not found.
@@ -14,6 +18,8 @@ def safe_get(response_dict : dict, keys : str, default:str | None =None):
     Returns:
         _type_: _description_
     """
+    if response_dict is None:
+        return default
     for key in keys:
         if isinstance(response_dict, dict):
             response_dict = response_dict.get(key)

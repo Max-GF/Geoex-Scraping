@@ -12,7 +12,7 @@ A data scraping from the Geoex system
 
 ## Installation
 
-Clone the project
+[Download](https://github.com/Max-GF/Geoex-Scraping/archive/refs/heads/main.zip) the zip file from the repository, or clone the project
 
 ```bash
   git clone https://github.com/Max-GF/Geoex-Scraping.git
@@ -31,6 +31,10 @@ To run this project, you will need to add the following environment variables to
 `COOKIES`
 `GXSESSION`
 `GXBOT`
+
+You also need to create a Google Cloud project and enable the Google Sheets API. Then, create a service account and download the JSON key file. Rename it to `credentials.json` and place it in the [assets](./assets) directory of the project.
+Go to https://developers.google.com/workspace/guides/create-project for more information.
+
 
 ## Usage
 
