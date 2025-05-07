@@ -3,6 +3,7 @@
 """
 import pandas as pd
 
+from src.modules.consult_builders.budget_consult import consult_budget_in_geoex
 from src.modules.consult_builders.folders_status_consult import consult_folder_status_in_geoex
 from src.modules.consult_builders.project_consult import consult_project_in_geoex
 from src.modules.load_configs.load_env_configs import load_env_credentials
@@ -103,8 +104,59 @@ class GeoexScraper:
             append_col_ref="A",
         )
 
+    def scrape_projects_budgets(
+        self,
+        google_sheet_id: str,
+        google_sheet_range: str,
+        ):
+        """
+        Scrape project budget information from Geoex.
+        This method iterates through the list of projects to consult
+        and retrieves their budget information using the Geoex API.
+        """
+        scraped_data = []
+        for project in self.projects_to_consult:
+            print(f"Project: {project}")
+            result = consult_project_in_geoex(
+                project_numbers=project,
+                cookies=self.geoex_credentials["cookies"],
+                gxsessao=self.geoex_credentials["gxsessao"],
+                gxbot=self.geoex_credentials["gxbot"]
+            )
+            if result['response_status'] == 200:
+                project_budget = consult_budget_in_geoex(
+                    safe_get(result, ['response_body', 'ProjetoId']),
+                    cookies=self.geoex_credentials["cookies"],
+                    gxsessao=self.geoex_credentials["gxsessao"],
+                    gxbot=self.geoex_credentials["gxbot"]
+                    )
+                no_null_budget_rows = [row for row in safe_get(project_budget,['response_body','Item','Itens']) if row['Quantidade'] >0]
+
+                for row in no_null_budget_rows:
+                    scraped_data.append([
+                        safe_get(result, ['response_body', 'ProjetoText']).split("-")[1],
+                        safe_get(row, ['Grupo']),
+                        safe_get(row, ['Codigo']),
+                        safe_get(row, ['UnidadeMedida']),
+                        safe_get(row, ['Nome']),
+                        safe_get(row, ['JustificativaAnalise']),
+                        safe_get(row, ['Quantidade']),
+                        safe_get(row, ['QuantidadeAnalise']),
+                        safe_get(row, ['QuantidadeAjuste']),
+                        safe_get(row, ['Validado']),
+                    ])
+
+        print(pd.DataFrame(scraped_data))
+        SheetsPython().update_sheets_data(
+            data_frame=pd.DataFrame(scraped_data),
+            id_sheets=google_sheet_id,
+            range_sheets=google_sheet_range,
+            append=True,
+            append_col_ref="A",
+        )
+
 if __name__ == "__main__":
-    GeoexScraper().scrape_projects_infos(
+    GeoexScraper().scrape_projects_budgets(
         "1JFyGqnTuxnPSN7grmf8SHpHS2NnxSClj2p1Uxa-KRJE",
         "Base!A:Z"
     )
