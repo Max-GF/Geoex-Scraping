@@ -4,7 +4,7 @@
 import os
 from dotenv import load_dotenv
 
-def load_env_credentials() -> dict[str, str]:
+def load_env_configs() -> dict[str, str]:
     """
     Load environment variables from .env file.
 
@@ -16,5 +16,6 @@ def load_env_credentials() -> dict[str, str]:
     return {
         "cookies": os.getenv("COOKIES"),
         "gxsessao": os.getenv("GXSESSION"),
-        "gxbot": os.getenv("GXBOT")
+        "gxbot": os.getenv("GXBOT"),
+        "APP_NAME" : os.getenv("APP_NAME"),
     }
