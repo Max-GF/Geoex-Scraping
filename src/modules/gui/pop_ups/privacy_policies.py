@@ -72,7 +72,6 @@ class PrivacyPolicies:
         scroll_layout.addWidget(label)
         scroll_area.setWidget(content_widget)
 
-        # Botões
         button_layout = QHBoxLayout()
         agree_button = QPushButton("  Concordo  ")
         agree_button.setCursor(Qt.PointingHandCursor)
@@ -88,7 +87,6 @@ class PrivacyPolicies:
         layout.addWidget(scroll_area)
         layout.addLayout(button_layout)
 
-        # Conectar
         agree_button.clicked.connect(lambda: dialog.done(1))
         disagree_button.clicked.connect(lambda: dialog.done(0))
 
