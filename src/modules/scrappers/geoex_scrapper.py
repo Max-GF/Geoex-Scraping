@@ -7,8 +7,6 @@ from src.modules.consult_builders.budget_consult import consult_budget_in_geoex
 from src.modules.consult_builders.folders_status_consult import consult_folder_status_in_geoex
 from src.modules.consult_builders.project_consult import consult_project_in_geoex
 from src.modules.consult_builders.project_rejection_details_consult import consult_project_rejection_details_in_geoex
-from src.modules.load_configs.load_env_configs import load_env_credentials
-from src.modules.load_configs.load_project_list import load_project_list
 from src.modules.utils.fix_geoex_returned_dates import fix_geoex_returned_date
 from src.modules.utils.safe_get_for_body import safe_get
 from src.modules.google_sheets.sheets_python import SheetsPython
@@ -19,8 +17,7 @@ class GeoexScraper:
     This class is responsible for scraping data from Geoex.
     """
     def __init__(self):
-        self.geoex_credentials = load_env_credentials()
-        self.projects_to_consult = load_project_list()
+        # self.geoex_credentials = load_env_configs()
         self.folder_status_reversed_enum = {
             118: "PASTA ACEITA E FINALIZADA",
             30: "ACEITO",
@@ -33,8 +30,11 @@ class GeoexScraper:
             }
     def scrape_projects_infos(
         self,
+        geoex_credentials: dict,
+        projects_to_consult: list,
         google_sheet_id: str,
         google_sheet_range: str,
+        progress_callback: callable
         ):
         """
         Scrape project information from Geoex.
@@ -42,21 +42,21 @@ class GeoexScraper:
         and retrieves their information using the Geoex API.
         """
         scraped_data = []
-        for project in self.projects_to_consult:
+        for i,project in enumerate(projects_to_consult):
             print(f"Project: {project}")
             result = consult_project_in_geoex(
                 project_numbers=project,
-                cookies=self.geoex_credentials["cookies"],
-                gxsessao=self.geoex_credentials["gxsessao"],
-                gxbot=self.geoex_credentials["gxbot"]
+                cookies=geoex_credentials["cookies"],
+                gxsessao=geoex_credentials["gxsessao"],
+                gxbot=geoex_credentials["gxbot"]
             )
 
             if result['response_status'] == 200:
                 folder_status_result = consult_folder_status_in_geoex(
                     safe_get(result, ['response_body', 'ProjetoId']),
-                    cookies=self.geoex_credentials["cookies"],
-                    gxsessao=self.geoex_credentials["gxsessao"],
-                    gxbot=self.geoex_credentials["gxbot"]
+                    cookies=geoex_credentials["cookies"],
+                    gxsessao=geoex_credentials["gxsessao"],
+                    gxbot=geoex_credentials["gxbot"]
                 )
 
                 correct_send = next(
@@ -96,19 +96,23 @@ class GeoexScraper:
                                 fix_geoex_returned_date(folder_down_date),
                                 folder_n_attempts
                             ])
-        print(pd.DataFrame(scraped_data))
-        # SheetsPython().update_sheets_data(
-        #     data_frame=pd.DataFrame(scraped_data),
-        #     id_sheets=google_sheet_id,
-        #     range_sheets=google_sheet_range,
-        #     append=True,
-        #     append_col_ref="A",
-        # )
+            progress_callback(i+1)
+        SheetsPython().update_sheets_data(
+            data_frame=pd.DataFrame(scraped_data),
+            id_sheets=google_sheet_id,
+            range_sheets=google_sheet_range,
+            append=True,
+            append_col_ref="A",
+        )
+        return (True,"Scraping completed successfully.")
 
     def scrape_projects_budgets(
         self,
+        geoex_credentials: dict,
+        projects_to_consult: list,
         google_sheet_id: str,
         google_sheet_range: str,
+        progress_callback: callable
         ):
         """
         Scrape project budget information from Geoex.
@@ -116,20 +120,20 @@ class GeoexScraper:
         and retrieves their budget information using the Geoex API.
         """
         scraped_data = []
-        for project in self.projects_to_consult:
+        for i,project in enumerate(projects_to_consult):
             print(f"Project: {project}")
             result = consult_project_in_geoex(
                 project_numbers=project,
-                cookies=self.geoex_credentials["cookies"],
-                gxsessao=self.geoex_credentials["gxsessao"],
-                gxbot=self.geoex_credentials["gxbot"]
+                cookies=geoex_credentials["cookies"],
+                gxsessao=geoex_credentials["gxsessao"],
+                gxbot=geoex_credentials["gxbot"]
             )
             if result['response_status'] == 200:
                 project_budget = consult_budget_in_geoex(
                     safe_get(result, ['response_body', 'ProjetoId']),
-                    cookies=self.geoex_credentials["cookies"],
-                    gxsessao=self.geoex_credentials["gxsessao"],
-                    gxbot=self.geoex_credentials["gxbot"]
+                    cookies=geoex_credentials["cookies"],
+                    gxsessao=geoex_credentials["gxsessao"],
+                    gxbot=geoex_credentials["gxbot"]
                     )
                 no_null_budget_rows = [row for row in safe_get(project_budget,['response_body','Item','Itens']) if row['Quantidade'] >0]
 
@@ -149,19 +153,23 @@ class GeoexScraper:
                         safe_get(row, ['QuantidadeAjuste']),
                         safe_get(row, ['Validado']),
                     ])
+            progress_callback(i+1)
+        SheetsPython().update_sheets_data(
+            data_frame=pd.DataFrame(scraped_data),
+            id_sheets=google_sheet_id,
+            range_sheets=google_sheet_range,
+            append=True,
+            append_col_ref="A",
+        )
+        return (True,"Scraping completed successfully.")
 
-        print(pd.DataFrame(scraped_data))
-        # SheetsPython().update_sheets_data(
-        #     data_frame=pd.DataFrame(scraped_data),
-        #     id_sheets=google_sheet_id,
-        #     range_sheets=google_sheet_range,
-        #     append=True,
-        #     append_col_ref="A",
-        # )
 
     def scrape_projects_rejection_details(self,
+        geoex_credentials: dict,
+        projects_to_consult: list,
         google_sheet_id: str,
         google_sheet_range: str,
+        progress_callback: callable
         ):
         """
         Scrape project rejections details from Geoex.
@@ -171,20 +179,22 @@ class GeoexScraper:
             google_sheet_range (str): Range of the Google Sheet to update.
         """
         scraped_data = []
-        for project in self.projects_to_consult:
+        print(len(projects_to_consult))
+
+        for i,project in enumerate(projects_to_consult):
             print(f"Project: {project}")
             result = consult_project_in_geoex(
                 project_numbers=project,
-                cookies=self.geoex_credentials["cookies"],
-                gxsessao=self.geoex_credentials["gxsessao"],
-                gxbot=self.geoex_credentials["gxbot"]
+                cookies=geoex_credentials["cookies"],
+                gxsessao=geoex_credentials["gxsessao"],
+                gxbot=geoex_credentials["gxbot"]
             )
             if result['response_status'] == 200:
                 folder_status_result = consult_folder_status_in_geoex(
                     safe_get(result, ['response_body', 'ProjetoId']),
-                    cookies=self.geoex_credentials["cookies"],
-                    gxsessao=self.geoex_credentials["gxsessao"],
-                    gxbot=self.geoex_credentials["gxbot"]
+                    cookies=geoex_credentials["cookies"],
+                    gxsessao=geoex_credentials["gxsessao"],
+                    gxbot=geoex_credentials["gxbot"]
                 )
                 correct_send = next(
                     (element for element in folder_status_result['response_body']["Envios"] if element["Empresa"] == "ECOELÉTRICA"),
@@ -194,7 +204,6 @@ class GeoexScraper:
                     continue
 
                 sended_folders = safe_get(correct_send, ['EnvioPastas'],[])
-                print(sended_folders)
 
                 for folder in sended_folders:
                     eco_analist = safe_get(folder, ['Usuario', 'Nome'])
@@ -205,9 +214,9 @@ class GeoexScraper:
 
                     folder_rejection_details = consult_project_rejection_details_in_geoex(
                         safe_get(folder, ['ProjetoEnvioPastaId']),
-                        cookies=self.geoex_credentials["cookies"],
-                        gxsessao=self.geoex_credentials["gxsessao"],
-                        gxbot=self.geoex_credentials["gxbot"]
+                        cookies=geoex_credentials["cookies"],
+                        gxsessao=geoex_credentials["gxsessao"],
+                        gxbot=geoex_credentials["gxbot"]
                     )
                     rejects_at_response = []
                     rejects_at_response_observations = []
@@ -233,17 +242,25 @@ class GeoexScraper:
                         "\n".join(rejects_at_acceptance),
                         "\n".join(rejects_at_acceptance_observations),
                     ])
-        print(pd.DataFrame(scraped_data))
-        # SheetsPython().update_sheets_data(
-        #     data_frame=pd.DataFrame(scraped_data),
-        #     id_sheets=google_sheet_id,
-        #     range_sheets=google_sheet_range,
-        #     append=True,
-        #     append_col_ref="A",
-        # )
+            progress_callback(i+1)
+        SheetsPython().update_sheets_data(
+            data_frame=pd.DataFrame(scraped_data),
+            id_sheets=google_sheet_id,
+            range_sheets=google_sheet_range,
+            append=True,
+            append_col_ref="A",
+        )
+        return (True,"Scraping completed successfully.")
 
 if __name__ == "__main__":
-    GeoexScraper().scrape_projects_rejection_details(
-        "1JFyGqnTuxnPSN7grmf8SHpHS2NnxSClj2p1Uxa-KRJE",
-        "Base!A:Z"
+    GeoexScraper().scrape_projects_infos(
+        geoex_credentials={
+            "cookies": "your_cookies",
+            "gxsessao": "your_gxsessao",
+            "gxbot": "your_gxbot"
+        },
+        projects_to_consult=["project 1", "project 2"],
+        google_sheet_id="sheet_id",
+        google_sheet_range="sheet_range",
+        progress_callback=print,
     )

@@ -3,7 +3,7 @@
 """
 import os
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv( override=True )
 
 class ImgAndIconsPath:
     """ 
@@ -31,3 +31,6 @@ class ImgAndIconsPath:
 
     # BOTTON BAR
     resize_button : str = os.getenv("RESIZE_BUTTON_ICON_PATH")
+
+    # GEOEX PAGE
+    woking_gif : str = os.getenv("WORKING_GIF_PATH")

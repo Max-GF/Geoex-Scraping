@@ -12,10 +12,7 @@ def load_env_configs() -> dict[str, str]:
         Dict: A dictionary containing the credentials
         loaded from the environment variables.
     """
-    load_dotenv()
+    load_dotenv( override=True )
     return {
-        "cookies": os.getenv("COOKIES"),
-        "gxsessao": os.getenv("GXSESSION"),
-        "gxbot": os.getenv("GXBOT"),
         "APP_NAME" : os.getenv("APP_NAME"),
     }
