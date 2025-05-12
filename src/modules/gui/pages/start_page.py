@@ -1,103 +1,130 @@
 """
     Start Page Builder
 """
+import sys
 from PySide6.QtCore import (QSize, Qt)
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel,
                                QSizePolicy, QSpacerItem,
-                               QVBoxLayout, QWidget)
+                               QVBoxLayout, QWidget,QApplication)
 from src.modules.load_configs.load_icons_and_images_paths import ImgAndIconsPath
 
-def start_page_builder() -> QWidget:
+
+class StartPage(QWidget):
     """
-                         HOME PAGE
-    ◸——————————————————————————————————————————————————◹
-    |                        ↑                          |
-    |                    TOP SPACER                     |
-    |                        ↓                          |
-    |                    ◸———————◹                     |
-    |  ← LEFT SPACER →   |  LOGO  |   ← RIGHT SPACER →  |
-    |                    ◺———————◿                     |
-    |                        ↑                          |
-    |                    BOT SPACER                     |
-    |                        ↓                          |
-    ◺——————————————————————————————————————————————————◿
+        Start Page class for the Geoex application.
+        This class is responsible for creating the start page of the application.
 
-    Returns:
-        QWidget: Home page widget
+    Args:
+        QWidget (_type_): PySide6 QWidget class
     """
+    def __init__(self):
+        """
+            Constructor of the StartPage class.
+        """
+        super().__init__()
+        self.setWindowTitle("Start Page")
+        self.setMinimumSize(800, 600)
+        self.start_page_builder()
 
-    home = QWidget()
-    home_layout_v = QVBoxLayout(home)
+    def start_page_builder(self):
+        """
+                            HOME PAGE
+        ◸——————————————————————————————————————————————————◹
+        |                        ↑                          |
+        |                    TOP SPACER                     |
+        |                        ↓                          |
+        |                    ◸———————◹                     |
+        |  ← LEFT SPACER →   |  LOGO  |   ← RIGHT SPACER →  |
+        |                    ◺———————◿                     |
+        |                        ↑                          |
+        |                    BOT SPACER                     |
+        |                        ↓                          |
+        ◺——————————————————————————————————————————————————◿
 
-    home_frame = QFrame(home)
-    home_frame.setFrameShape(QFrame.StyledPanel)
-    home_frame.setFrameShadow(QFrame.Raised)
-    home_frame_layout = QVBoxLayout(home_frame)
+        Returns:
+            QWidget: Home page widget
+        """
 
-    top_logo_spacer = QSpacerItem(
-        20,
-        1000,
-        QSizePolicy.Policy.Minimum,
-        QSizePolicy.Policy.Maximum
-        )
+        home_layout_v = QVBoxLayout(self)
 
-    home_frame_layout.addItem(top_logo_spacer)
+        home_frame = QFrame(self)
+        home_frame.setFrameShape(QFrame.StyledPanel)
+        home_frame.setFrameShadow(QFrame.Raised)
+        home_frame_layout = QVBoxLayout(home_frame)
 
-    logo_holder = QWidget(home_frame)
-    logo_holder_layout = QHBoxLayout(logo_holder)
-    lef_logo_spacer = QSpacerItem(
-        1000,
-        20,
-        QSizePolicy.Policy.Expanding,
-        QSizePolicy.Policy.Minimum
-        )
+        top_logo_spacer = QSpacerItem(
+            20,
+            1000,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Maximum
+            )
 
-    logo_holder_layout.addItem(lef_logo_spacer)
+        home_frame_layout.addItem(top_logo_spacer)
 
-    logo = QLabel(logo_holder)
-    logo.setEnabled(True)
-    size_policy = QSizePolicy(
-        QSizePolicy.Policy.Expanding,
-        QSizePolicy.Policy.Expanding
-        )
-    size_policy.setHorizontalStretch(0)
-    size_policy.setVerticalStretch(0)
-    size_policy.setHeightForWidth(logo.sizePolicy().hasHeightForWidth())
-    logo.setSizePolicy(size_policy)
-    logo.setMinimumSize(QSize(1, 1))
-    logo.setTextFormat(Qt.AutoText)
-    logo.setPixmap(QPixmap(ImgAndIconsPath.home_image))
-    logo.setScaledContents(True)
-    logo.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-    logo_holder_layout.addWidget(
-        logo,
-        0,
-        Qt.AlignRight|Qt.AlignVCenter
-        )
+        logo_holder = QWidget(home_frame)
+        logo_holder_layout = QHBoxLayout(logo_holder)
+        lef_logo_spacer = QSpacerItem(
+            1000,
+            20,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum
+            )
+        logo_holder_layout.addItem(lef_logo_spacer)
+        logo = QLabel(logo_holder)
+        logo.setEnabled(True)
+        size_policy = QSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding
+            )
+        size_policy.setHorizontalStretch(0)
+        size_policy.setVerticalStretch(0)
+        size_policy.setHeightForWidth(logo.sizePolicy().hasHeightForWidth())
+        logo.setSizePolicy(size_policy)
+        logo.setMinimumSize(QSize(400, 400))
+        logo.setTextFormat(Qt.AutoText)
+        pixmap = QPixmap(ImgAndIconsPath.home_image, )
+        scaled_pixmap = pixmap.scaled(
+            logo.minimumHeight(),
+            logo.minimumWidth(),
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation
+            )
+        logo.setPixmap(scaled_pixmap)
+        logo.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        logo_holder_layout.addWidget(
+            logo,
+            0,
+            Qt.AlignRight|Qt.AlignVCenter
+            )
 
-    rig_logo_spacer = QSpacerItem(
-        1000,
-        20,
-        QSizePolicy.Policy.Maximum,
-        QSizePolicy.Policy.Minimum
-        )
-    logo_holder_layout.addItem(rig_logo_spacer)
+        rig_logo_spacer = QSpacerItem(
+            1000,
+            20,
+            QSizePolicy.Policy.Maximum,
+            QSizePolicy.Policy.Minimum
+            )
+        logo_holder_layout.addItem(rig_logo_spacer)
 
-    home_frame_layout.addWidget(
-        logo_holder,
-        0,
-        Qt.AlignHCenter|Qt.AlignVCenter
-        )
+        home_frame_layout.addWidget(
+            logo_holder,
+            0,
+            Qt.AlignHCenter|Qt.AlignVCenter
+            )
 
-    bot_logo_spacer = QSpacerItem(
-        20,
-        1000,
-        QSizePolicy.Policy.Minimum,
-        QSizePolicy.Policy.Maximum
-        )
-    home_frame_layout.addItem(bot_logo_spacer)
+        bot_logo_spacer = QSpacerItem(
+            20,
+            1000,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Maximum
+            )
+        home_frame_layout.addItem(bot_logo_spacer)
 
-    home_layout_v.addWidget(home_frame)
+        home_layout_v.addWidget(home_frame)
 
-    return home
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = StartPage()
+    window.show()
+    sys.exit(app.exec())
