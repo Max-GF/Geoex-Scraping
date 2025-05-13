@@ -20,7 +20,7 @@ class ImgAndIconsPath:
     expand_sidebar : str = os.getenv("EXPAND_SIDEBAR_ICON_PATH")
     home_btn : str = os.getenv("HOME_BUTTON_ICON_PATH")
     page_1_btn : str = os.getenv("PAGE_1_BUTTON_ICON_PATH")
-    page_2_btn : str = os.getenv("PAGE_2_BUTTON_ICON_PATH")
+    geoex_page_btn : str = os.getenv("GEOEX_PAGE_BUTTON_ICON_PATH")
     privacy : str = os.getenv("PRIVACY_POLICIES_ICON_PATH")
 
     # HOME

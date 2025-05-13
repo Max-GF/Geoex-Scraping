@@ -5,8 +5,10 @@
     to create the Pyside6 instance
     and modify it according to the desired parameters
 """
+import sys
 import os
 from dotenv import load_dotenv
+from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import (QMainWindow, QFrame, QHBoxLayout,
                                QVBoxLayout, QStackedWidget, QLabel,
                                QSpacerItem, QSizePolicy, QPushButton,
@@ -16,8 +18,8 @@ from PySide6.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve
 from src.modules.load_configs.load_icons_and_images_paths import ImgAndIconsPath
 from src.modules.gui.pop_ups.privacy_policies import PrivacyPolicies
 from src.modules.gui.style_sheet import StyleSheets
-from modules.gui.pages import UiPagesWidget
-from modules.gui.helper import HelpPopUp
+from src.modules.gui.pop_ups.helper import HelpPopUp
+from src.modules.gui.pages_compiler import UiPagesWidget
 
 
 
@@ -26,9 +28,8 @@ APP_NAME = os.getenv("APP_NAME")
 
 class UiMainWindow(QMainWindow):
     """
-        Polymorphic class that uses an existing class
-        in pyside6 and adjusts this model as necessary
-        for the application
+        Class that create the main window
+        and all the components inside of it
 
     Args:
         QMainWindow (QMainWindow): Pyside6 original class
@@ -56,8 +57,8 @@ class UiMainWindow(QMainWindow):
             self.setObjectName("MainWindow")
 
         # Setting window size parameters
-        self.resize(720,360)
-        self.setMinimumSize(720,360)
+        self.resize(850,650)
+        self.setMinimumSize(850,650)
         self.setWindowFlag(Qt.FramelessWindowHint) # Remove base title bar provided by Windowns
 
         # Setting central frame
@@ -143,25 +144,14 @@ class UiMainWindow(QMainWindow):
                                                              clicked_btn=btn_home))
         self.sidebar_buttons.append(btn_home)
 
-        # Page 1 button
-        page_1_btn : QPushButton = QPushButton("\t\t\tPage 1",
-                                               cursor=Qt.PointingHandCursor,
-                                               icon=QIcon(ImgAndIconsPath.page_1_btn))
-        page_1_btn.setCheckable(True)
-        page_1_btn.setStyleSheet(StyleSheets.side_bar_button)
-        page_1_btn.clicked.connect(lambda : self.__change_page(page=self.pages.page_1,
-                                                               clicked_btn=page_1_btn))
-        self.sidebar_buttons.append(page_1_btn)
-
-        # Page 2 button
-        page_2_btn : QPushButton = QPushButton("\t\t\tPage 2",
-                                               icon=QIcon(ImgAndIconsPath.page_2_btn),
+        geoex_page_btn : QPushButton = QPushButton("\t\t\tGeoex Scrapper",
+                                               icon=QIcon(ImgAndIconsPath.geoex_page_btn),
                                                cursor=Qt.PointingHandCursor)
-        page_2_btn.setCheckable(True)
-        page_2_btn.setStyleSheet(StyleSheets.side_bar_button)
-        page_2_btn.clicked.connect(lambda : self.__change_page(page=self.pages.page_2,
-                                                               clicked_btn=page_2_btn))
-        self.sidebar_buttons.append(page_2_btn)
+        geoex_page_btn.setCheckable(True)
+        geoex_page_btn.setStyleSheet(StyleSheets.side_bar_button)
+        geoex_page_btn.clicked.connect(lambda : self.__change_page(page=self.pages.geoex_page,
+                                                               clicked_btn=geoex_page_btn))
+        self.sidebar_buttons.append(geoex_page_btn)
 
         # Lower side bar button
         bottom_side_bar_button : QPushButton = QPushButton("\t\t\tPolíticas de privacidade",
@@ -177,8 +167,7 @@ class UiMainWindow(QMainWindow):
         # Adding button to sidebar layout
         sidebar_layout.addWidget(expand_side_bar_button)
         sidebar_layout.addWidget(btn_home)
-        sidebar_layout.addWidget(page_1_btn)
-        sidebar_layout.addWidget(page_2_btn)
+        sidebar_layout.addWidget(geoex_page_btn)
         spacer : QWidget = QWidget()
         spacer.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         sidebar_layout.addWidget(spacer)
@@ -221,7 +210,7 @@ class UiMainWindow(QMainWindow):
         question_mark : QPushButton = QPushButton(cursor=Qt.PointingHandCursor,
                                                   icon=QIcon(ImgAndIconsPath.question_mark))
         question_mark.setStyleSheet(StyleSheets.title_bar_button)
-        question_mark.clicked.connect(HelpPopUp.show_message)
+        question_mark.clicked.connect(lambda name: HelpPopUp().show_message(name))
         title_bar_layout.addWidget(question_mark)
 
         # Build title bar minimize button
@@ -279,7 +268,7 @@ class UiMainWindow(QMainWindow):
         """
         if event.buttons() == Qt.LeftButton and self.draggable:
             global_pos = event.globalPosition().toPoint()
-            drag_pos = self.drag_pos.toPoint()  # Convertendo self.drag_pos para QPoint
+            drag_pos = self.drag_pos.toPoint()
             self.move(global_pos - drag_pos)
             event.accept()
 
@@ -331,4 +320,14 @@ class UiMainWindow(QMainWindow):
             clicked_btn (QPushButton): Clicked button
         """
         self.__change_state_sidebar_buttons(clicked_btn=clicked_btn)
-        PrivacyPolicies().show_message()
+        PrivacyPolicies().show_message(APP_NAME)
+
+
+if __name__ == "__main__":
+    # Example usage
+    app = QApplication(sys.argv)
+
+    window = UiMainWindow()
+    window.show()
+
+    sys.exit(app.exec())
