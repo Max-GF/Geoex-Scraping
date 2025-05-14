@@ -13,8 +13,14 @@ class PrivacyPolicies:
     """
     Privacy policies class with necessary functions
     """
+    def __init__(self):
+        """
+        Initialize PrivacyPolicies class
+        """
+        env_configs = load_env_configs()
+        self.app_name = env_configs["APP_NAME"]
 
-    def show_message(self, app_name : str) -> bool:
+    def show_message(self) -> bool:
         """
         Build Privacy policies window and show it
 
@@ -38,7 +44,7 @@ class PrivacyPolicies:
         informative_text = f"""
         <h1 style="text-align:center; font-weight:bold; font-size:16px;">Bem-vindo!</h1>
         <div style="text-align: left;">
-          <p style="line-height: 1.4;">O app <b>"{app_name}"</b> opera exclusivamente com arquivos e diretórios contidos na mesma pasta do executável ou do código-fonte.</p>
+          <p style="line-height: 1.4;">O app <b>"{self.app_name}"</b> opera exclusivamente com arquivos e diretórios contidos na mesma pasta do executável ou do código-fonte.</p>
           <p style="line-height: 1.4;">Isso significa que:
             <br><b>- Nenhum diretório externo será acessado sem que esteja explicitamente dentro da pasta do app;</b>
             <br><b>- Nenhum arquivo será criado ou lido fora do escopo dessa pasta;</b>
@@ -95,11 +101,9 @@ class PrivacyPolicies:
 
 
 if __name__ == "__main__":
-    env_configs = load_env_configs()
-    name = env_configs["APP_NAME"]
     QApplication([])
     privacy_policies = PrivacyPolicies()
-    user_agreement = privacy_policies.show_message(name)
+    user_agreement = privacy_policies.show_message()
     if user_agreement:
         print("User agreed to the privacy policies.")
     else:

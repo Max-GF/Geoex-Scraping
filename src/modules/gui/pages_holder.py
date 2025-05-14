@@ -277,7 +277,7 @@ class UiMainWindow(QMainWindow):
             Resize side bar 50px <=> 200px
         """
         if self.sidebar.width() == 50:
-            aux = 200
+            aux = 205
         else:
             aux = 50
 
@@ -320,7 +320,7 @@ class UiMainWindow(QMainWindow):
             clicked_btn (QPushButton): Clicked button
         """
         self.__change_state_sidebar_buttons(clicked_btn=clicked_btn)
-        PrivacyPolicies().show_message(APP_NAME)
+        PrivacyPolicies().show_message()
 
 
 if __name__ == "__main__":

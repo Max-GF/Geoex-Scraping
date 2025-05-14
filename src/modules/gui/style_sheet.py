@@ -184,23 +184,34 @@ class StyleSheets:
         
         QTableWidget {
             background-color: #1E1E1E;
-            color: #F5F5F5;
-            border: 1px solid #333333;
-            padding: 0px;
-            border-radius: 8px;
-            gridline-color: #333333;
+            alternate-background-color: #3C3C3C;
+            font-size: 13px;
+            outline: none;
+            
         }
-        
+        QHeaderView::section {
+            background-color: #404040;
+            color: white;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
         QTableWidget::item {
             padding: 5px;
-            border-radius: 4px;
         }
-        
         QTableWidget::item:selected {
-            background-color: #3498DB;
-            color: #FFFFFF;
+            background-color: #007ACC;
+            gridline-color: #3498DB;
         }
 
+        QTableWidget QLineEdit {
+            background: transparent;
+            border: none;
+            color: white;
+            selection-background-color: #005999;
+            padding: 0px;
+            outline: none;
+            
+        }
         QComboBox {
             background-color: #2C2C2C;
             color: #F5F5F5;
@@ -298,16 +309,15 @@ class StyleSheets:
 
         QScrollBar:vertical {
             border: none;
-            background-color: #1A1A1A;
+            background: #0F0F0F;
             width: 10px;
             margin: 0px 0px 0px 0px;
-            border-radius: 5px;
+            outline: none;
         }
 
         QScrollBar::handle:vertical {
             background-color: #3498DB;
             min-height: 25px;
-            border-radius: 5px;
         }
 
         QScrollBar::handle:vertical:hover {

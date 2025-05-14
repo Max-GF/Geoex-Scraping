@@ -183,73 +183,73 @@ class GeoexScraper:
 
         for i,project in enumerate(projects_to_consult):
             print(f"Project: {project}")
-        #     result = consult_project_in_geoex(
-        #         project_numbers=project,
-        #         cookies=geoex_credentials["cookies"],
-        #         gxsessao=geoex_credentials["gxsessao"],
-        #         gxbot=geoex_credentials["gxbot"]
-        #     )
-        #     if result['response_status'] == 200:
-        #         folder_status_result = consult_folder_status_in_geoex(
-        #             safe_get(result, ['response_body', 'ProjetoId']),
-        #             cookies=geoex_credentials["cookies"],
-        #             gxsessao=geoex_credentials["gxsessao"],
-        #             gxbot=geoex_credentials["gxbot"]
-        #         )
-        #         correct_send = next(
-        #             (element for element in folder_status_result['response_body']["Envios"] if element["Empresa"] == "ECOELÉTRICA"),
-        #             None)
+            result = consult_project_in_geoex(
+                project_numbers=project,
+                cookies=geoex_credentials["cookies"],
+                gxsessao=geoex_credentials["gxsessao"],
+                gxbot=geoex_credentials["gxbot"]
+            )
+            if result['response_status'] == 200:
+                folder_status_result = consult_folder_status_in_geoex(
+                    safe_get(result, ['response_body', 'ProjetoId']),
+                    cookies=geoex_credentials["cookies"],
+                    gxsessao=geoex_credentials["gxsessao"],
+                    gxbot=geoex_credentials["gxbot"]
+                )
+                correct_send = next(
+                    (element for element in folder_status_result['response_body']["Envios"] if element["Empresa"] == "ECOELÉTRICA"),
+                    None)
 
-        #         if correct_send is None:
-        #             continue
+                if correct_send is None:
+                    continue
 
-        #         sended_folders = safe_get(correct_send, ['EnvioPastas'],[])
+                sended_folders = safe_get(correct_send, ['EnvioPastas'],[])
 
-        #         for folder in sended_folders:
-        #             eco_analist = safe_get(folder, ['Usuario', 'Nome'])
-        #             eco_request_date = fix_geoex_returned_date(safe_get(folder, ['Data']))
-        #             response_date = fix_geoex_returned_date(safe_get(folder, ['DataResponsavelValidacao']))
-        #             acceptance_date = fix_geoex_returned_date(safe_get(folder, ['DataResponsavel']))
-        #             status = safe_get(folder, ['HistoricoStatusId'],99)
+                for folder in sended_folders:
+                    eco_analist = safe_get(folder, ['Usuario', 'Nome'])
+                    eco_request_date = fix_geoex_returned_date(safe_get(folder, ['Data']))
+                    response_date = fix_geoex_returned_date(safe_get(folder, ['DataResponsavelValidacao']))
+                    acceptance_date = fix_geoex_returned_date(safe_get(folder, ['DataResponsavel']))
+                    status = safe_get(folder, ['HistoricoStatusId'],99)
 
-        #             folder_rejection_details = consult_project_rejection_details_in_geoex(
-        #                 safe_get(folder, ['ProjetoEnvioPastaId']),
-        #                 cookies=geoex_credentials["cookies"],
-        #                 gxsessao=geoex_credentials["gxsessao"],
-        #                 gxbot=geoex_credentials["gxbot"]
-        #             )
-        #             rejects_at_response = []
-        #             rejects_at_response_observations = []
-        #             rejects_at_acceptance = []
-        #             rejects_at_acceptance_observations = []
+                    folder_rejection_details = consult_project_rejection_details_in_geoex(
+                        safe_get(folder, ['ProjetoEnvioPastaId']),
+                        cookies=geoex_credentials["cookies"],
+                        gxsessao=geoex_credentials["gxsessao"],
+                        gxbot=geoex_credentials["gxbot"]
+                    )
+                    rejects_at_response = []
+                    rejects_at_response_observations = []
+                    rejects_at_acceptance = []
+                    rejects_at_acceptance_observations = []
 
-        #             for item in safe_get(folder_rejection_details, ['response_body', 'Itens'], []):
-        #                 if item['HistoricoStatusIdValidacao'] == 32:
-        #                     rejects_at_response.append(item['EnvioPastaItem'])
-        #                     rejects_at_response_observations.append(safe_get(item,['ObservacaoValidacao'],''))
-        #                 if item['HistoricoStatusId'] == 32:
-        #                     rejects_at_acceptance.append(item['EnvioPastaItem'])
-        #                     rejects_at_acceptance_observations.append(safe_get(item,['Observacao'],''))
-        #             scraped_data.append([
-        #                 project,
-        #                 eco_analist,
-        #                 eco_request_date,
-        #                 self.folder_status_reversed_enum[status],
-        #                 response_date,
-        #                 "\n".join(rejects_at_response),
-        #                 "\n".join(rejects_at_response_observations),
-        #                 acceptance_date,
-        #                 "\n".join(rejects_at_acceptance),
-        #                 "\n".join(rejects_at_acceptance_observations),
-        #             ])
+                    for item in safe_get(folder_rejection_details, ['response_body', 'Itens'], []):
+                        if item['HistoricoStatusIdValidacao'] == 32:
+                            rejects_at_response.append(item['EnvioPastaItem'])
+                            rejects_at_response_observations.append(safe_get(item,['ObservacaoValidacao'],''))
+                        if item['HistoricoStatusId'] == 32:
+                            rejects_at_acceptance.append(item['EnvioPastaItem'])
+                            rejects_at_acceptance_observations.append(safe_get(item,['Observacao'],''))
+                    scraped_data.append([
+                        project,
+                        eco_analist,
+                        eco_request_date,
+                        self.folder_status_reversed_enum[status],
+                        response_date,
+                        "\n".join(rejects_at_response),
+                        "\n".join(rejects_at_response_observations),
+                        acceptance_date,
+                        "\n".join(rejects_at_acceptance),
+                        "\n".join(rejects_at_acceptance_observations),
+                    ])
             progress_callback(i+1)
-        # SheetsPython().update_sheets_data(
-        #     data_frame=pd.DataFrame(scraped_data),
-        #     id_sheets=google_sheet_id,
-        #     range_sheets=google_sheet_range,
-        #     append=True,
-        #     append_col_ref="A",
-        # )
+        SheetsPython().update_sheets_data(
+            data_frame=pd.DataFrame(scraped_data),
+            id_sheets=google_sheet_id,
+            range_sheets=google_sheet_range,
+            append=True,
+            append_col_ref="A",
+        )
         return (True,"Scraping completed successfully.")
 
 if __name__ == "__main__":

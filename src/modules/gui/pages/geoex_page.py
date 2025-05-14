@@ -10,10 +10,11 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QScrollArea,
     QGridLayout,QLineEdit,QProgressBar,QMessageBox
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, Slot, QThread
 from PySide6.QtGui import QMovie,QKeySequence
 from src.modules.scrappers.geoex_scrapper import GeoexScraper
 from src.modules.gui.style_sheet import StyleSheets
+from src.modules.gui.workers.geoex_scrapper_worker import ScraperWorker
 from src.modules.load_configs.load_icons_and_images_paths import ImgAndIconsPath
 
 class GeoexPage(QWidget):
@@ -36,6 +37,8 @@ class GeoexPage(QWidget):
         self.setWindowTitle("Coletor de Dados Geoex")
         self.setMinimumSize(800, 600)
         self.scraper = scraper
+        self.thread = None
+        self.worker = None
 
         # Page Buttons
         self.collect_general_button = None
@@ -110,7 +113,7 @@ class GeoexPage(QWidget):
         buttons_layout.addWidget(self.collect_general_button)
         buttons_layout.addWidget(self.collect_budget_button)
         buttons_layout.addWidget(self.collect_rejections_button)
-        buttons_layout.addStretch(1)
+        buttons_layout.setAlignment(Qt.AlignCenter)
         buttons_box.setMinimumWidth(400)
         buttons_box.setMaximumHeight(100)
         buttons_box.setLayout(buttons_layout)
@@ -230,14 +233,22 @@ class GeoexPage(QWidget):
             The buttons are connected to the functions
         """
         if self.collect_general_button:
-            self.collect_general_button.clicked.connect(self.collect_general_data)
+            self.collect_general_button.clicked.connect(
+                lambda: self._initiate_scraping("general", "Dados Gerais")
+            )
         if self.collect_budget_button:
-            self.collect_budget_button.clicked.connect(self.collect_budget_data)
+            self.collect_budget_button.clicked.connect(
+                lambda: self._initiate_scraping("budget", "Orçamento")
+            )
         if self.collect_rejections_button:
-            self.collect_rejections_button.clicked.connect(self.collect_rejections_data)
+            self.collect_rejections_button.clicked.connect(
+                lambda: self._initiate_scraping("rejections", "Rejeições")
+            )
 
-    def _update_progress_from_scraper(
+    @Slot(str, int)
+    def _update_progress_from_worker(
         self,
+        operation_name_from_signal: str,
         current_value: int,
         ):
         """
@@ -246,12 +257,18 @@ class GeoexPage(QWidget):
         Args:
             current_value (int): current value of the progress bar
         """
+        print(f"{operation_name_from_signal} progress from worker: {current_value}")
         if self.loading_bar:
             self.loading_bar.setValue(current_value)
         QApplication.processEvents()
 
     def _get_project_ids_from_table(self) -> list:
-        """Extrai os IDs dos projetos da tabela."""
+        """
+            Get the project ids from the table.
+
+        Returns:
+            list: List of project ids
+        """
         ids = []
         if self.project_table:
             for row in range(self.project_table.rowCount()):
@@ -261,12 +278,17 @@ class GeoexPage(QWidget):
         return ids
 
     def _start_processing_ui(self, action_name: str):
-        """Configura a UI para o início do processamento."""
-        print(f"UI: Iniciando {action_name}")
+        """
+            Show the loading bar and the gif
+            and disable the buttons.
+
+        Args:
+            action_name (str): Name of the action to be performed
+        """
         if self.execution_box:
             self.execution_box.setVisible(True)
 
-        num_projects = self.project_table.rowCount() # ou len(self._get_project_ids_from_table())
+        num_projects = self.project_table.rowCount()
         if num_projects == 0:
             self.loading_bar.setRange(0, 1)
             self.loading_bar.setValue(0)
@@ -275,7 +297,7 @@ class GeoexPage(QWidget):
                 self.robo_label.setPixmap(self.static_robo_pixmap)
             else: self.robo_label.setText("Pronto")
             QMessageBox.information(self, "Sem Projetos", "Nenhum projeto na tabela para processar.")
-            return False # Indica que não há projetos
+            return False
 
         self.loading_bar.setRange(0, num_projects)
         self.loading_bar.setValue(0)
@@ -287,13 +309,21 @@ class GeoexPage(QWidget):
         else:
             self.robo_label.setText(f"Processando {action_name}...")
         self.set_buttons_enabled(False)
-        return True # Indica que o processamento pode começar
+        return True
 
+    @Slot(str, bool, str)
     def _finish_processing_ui(self, action_name: str, success: bool, message: str):
-        """Restaura a UI após o término do processamento."""
-        print(f"UI: Concluído {action_name} - Sucesso: {success}, Mensagem: {message}")
+        """
+            Finish the processing UI by stopping the gif
+            and hide both the gif and the loading bar.
+
+        Args:
+            action_name (str): Name of the action to be performed
+            success (bool): True if the action was successful, False otherwise
+            message (str): Message from the action
+        """
         if success:
-            self.loading_bar.setValue(self.loading_bar.maximum()) # Garante que a barra vá até o fim
+            self.loading_bar.setValue(self.loading_bar.maximum())
             self.loading_bar.setFormat(f"{action_name}: Concluído!")
             QMessageBox.information(self, "Sucesso", message)
         else:
@@ -305,140 +335,90 @@ class GeoexPage(QWidget):
             self.robo_movie.stop()
             if self.static_robo_pixmap:
                 self.robo_label.setPixmap(self.static_robo_pixmap)
-        elif self.static_robo_pixmap: # Se o filme não era válido, mas temos o pixmap
+        elif self.static_robo_pixmap:
             self.robo_label.setPixmap(self.static_robo_pixmap)
-        else: # Fallback
+        else:
             self.robo_label.setText("Pronto")
 
-        # Considerar esconder a caixa de execução após um tempo ou deixar visível com o status final
         if self.execution_box:
-            self.execution_box.setVisible(False) # Para esconder imediatamente
+            self.execution_box.setVisible(False)
 
         self.set_buttons_enabled(True)
+        if self.thread is not None:
+            self.thread.quit()
+            self.thread.wait()
+            self.thread.deleteLater()
+            self.thread = None
+            self.worker = None
 
-    # --- Métodos de Coleta (Delegam ao Scraper) ---
-    def collect_general_data(self):
+    def _initiate_scraping(self, operation_type: str, action_name: str):
         """
-            Collect the general data from the geoex website
-            and send it to the google sheets.
-            The function is called when the user clicks on the
-            collect_general_button.
+            Initiate the scraping process by starting a new thread
+            and connecting the signals to the slots.
+        Args:
+            operation_type (str): Literal string to identify the operation type "general", "budget", "rejections"
+            action_name (str): Literal string to identify the action name "Dados Gerais", "Orçamento", "Rejeições"
         """
-        if not self._start_processing_ui("Dados Gerais"):
+        if self.thread is not None:
+            QMessageBox.warning(self, "Em Progresso", "Uma operação já está em andamento. Aguarde a finalização.")
+            return
+
+        if not self._start_processing_ui(action_name):
             self.set_buttons_enabled(True)
             return
 
         project_ids = self._get_project_ids_from_table()
+
+        if not project_ids and action_name:
+            self._finish_processing_ui(action_name, False, "Nenhum projeto na tabela para processar.")
+            return
+
         cookies = self.cookies_input.text()
         session_id = self.session_id_input.text()
         bot_id = self.bot_id_input.text()
+        gs_id = self.gs_id_input.text()
+        gs_range = self.gs_range_input.text()
 
         if not all([cookies, session_id, bot_id]):
             QMessageBox.warning(
-                self,
-                "Entradas Faltando",
-                "Por favor, preencha todos os campos de Credenciais Geoex."
-                )
-            self._finish_processing_ui("Dados Gerais", False, "Entradas Geoex incompletas.")
-            return
-
-        try:
-            success, message = self.scraper.scrape_projects_infos(
-                {
-                    "cookies": cookies,
-                    "gxsessao": session_id,
-                    "gxbot": bot_id,
-                },
-                project_ids,
-                self.gs_id_input.text(),
-                self.gs_range_input.text(),
-                self._update_progress_from_scraper,
+                self, "Entradas Faltando", "Por favor, preencha todos os campos de Credenciais Geoex."
             )
-        except Exception as e: # pylint: disable=<W0718>
-            print(f"Erro ao chamar scraper.scrape_general_data: {e}")
-            success = False
-            message = f"Erro inesperado na interface: {e}"
-        finally:
-            self._finish_processing_ui("Dados Gerais", success, message)
+            self._finish_processing_ui(action_name, False, "Entradas Geoex incompletas.")
+            return
 
-    def collect_budget_data(self):
-        """
-            Collect the budget data from the geoex website
-            and send it to the google sheets.
-            The function is called when the user clicks on the
-            collect_budget_button.
-        """
-        if not self._start_processing_ui("Orçamento"):
-            self.set_buttons_enabled(True)
-            return
-        project_ids = self._get_project_ids_from_table()
-        cookies = self.cookies_input.text()
-        session_id = self.session_id_input.text()
-        bot_id = self.bot_id_input.text()
-        if not all([cookies, session_id, bot_id]):
-            QMessageBox.warning(self, "Entradas Faltando", "Por favor, preencha todos os campos de Credenciais Geoex.")
-            self._finish_processing_ui("Orçamento", False, "Entradas Geoex incompletas.")
-            return
-        try:
-            success, message = self.scraper.scrape_projects_budgets(
-                {
-                    "cookies": cookies,
-                    "gxsessao": session_id,
-                    "gxbot": bot_id,
-                },
-                project_ids,
-                self.gs_id_input.text(),
-                self.gs_range_input.text(),
-                self._update_progress_from_scraper,
-            )
-        except Exception as e: # pylint: disable=<W0718>
-            success = False
-            message = f"Erro inesperado na interface: {e}"
-        finally:
-            self._finish_processing_ui("Orçamento", success, message)
-
-    def collect_rejections_data(self):
-        """
-            Collect the rejections data from the geoex website
-            and send it to the google sheets.
-            The function is called when the user clicks on the
-            collect_rejections_button.
-        """
-        if not self._start_processing_ui("Rejeições"):
-            self.set_buttons_enabled(True)
-            return
-        project_ids = self._get_project_ids_from_table()
-        cookies = self.cookies_input.text()
-        session_id = self.session_id_input.text()
-        bot_id = self.bot_id_input.text()
-        if not all([cookies, session_id, bot_id]):
+        if not all([gs_id, gs_range]):
             QMessageBox.warning(
-                self,
-                "Entradas Faltando",
-                "Por favor, preencha todos os campos de Credenciais Geoex."
-                )
-            self._finish_processing_ui(
-                "Rejeições",
-                False,
-                "Entradas Geoex incompletas.")
-            return
-        try:
-            success, message = self.scraper.scrape_projects_rejection_details(
-                {
-                    "cookies": cookies,
-                    "gxsessao": session_id,
-                    "gxbot": bot_id,
-                },
-                project_ids,
-                self.gs_id_input.text(),
-                self.gs_range_input.text(),
-                self._update_progress_from_scraper,
+                self, "Entradas Faltando", "Por favor, preencha o ID da Planilha e o Intervalo de Dados do Google Sheets."
             )
-        except Exception as e: # pylint: disable=<W0718>
-            success = False
-            message = f"Erro inesperado na interface: {e}"
-        finally:
-            self._finish_processing_ui("Rejeições", success, message)
+            self._finish_processing_ui(action_name, False, "Configurações do Google Sheets incompletas.")
+            return
+
+        credentials = {
+            "cookies": cookies,
+            "gxsessao": session_id,
+            "gxbot": bot_id,
+        }
+
+        self.thread = QThread()
+        self.worker = ScraperWorker(
+            scraper=self.scraper,
+            operation_type=operation_type,
+            credentials=credentials,
+            project_ids=project_ids,
+            gs_id=gs_id,
+            gs_range=gs_range
+        )
+        self.worker.moveToThread(self.thread)
+
+        self.worker.progress.connect(self._update_progress_from_worker)
+        self.worker.finished.connect(self._finish_processing_ui)
+
+        self.thread.started.connect(self.worker.run)
+
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.worker.finished.connect(self.worker.deleteLater)
+
+        self.thread.start()
 
     def set_buttons_enabled(
         self,
