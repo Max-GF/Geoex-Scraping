@@ -4,6 +4,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue)](https://www.python.org/)
 [![Cloudscraper](https://img.shields.io/badge/Cloudscraper-v1.2.71-orange)](https://github.com/codemanki/cloudscraper)
 [![Google Sheets API](https://img.shields.io/badge/Google%20Sheets%20API-v4-yellowgreen)](https://developers.google.com/sheets/api)
+[![PySide6](https://img.shields.io/badge/PySide6-v6.5.0-red)](https://pypi.org/project/PySide6/)
 
 # Geoex-Scraping
 
@@ -28,9 +29,19 @@ Install dependencies
 
 To run this project, you will need to add the following environment variables to your .env file. Check the [.env.example](.env.example) file for reference.
 
-`COOKIES`
-`GXSESSION`
-`GXBOT`
+`APP_NAME`
+`MAXIMIZE_ICON_PATH`
+`MINIMIZE_ICON_PATH`
+`CLOSE_ICON_PATH`
+`PRIVACY_POLICIES_ICON_PATH`
+`HELP_ICON_PATH`
+`HOME_LOGO_PATH`
+`TITLE_ICON_PATH`
+`EXPAND_SIDEBAR_ICON_PATH`
+`RESIZE_BUTTON_ICON_PATH`
+`HOME_BUTTON_ICON_PATH`
+`GEOEX_PAGE_BUTTON_ICON_PATH`
+`WORKING_GIF_PATH`
 
 You also need to create a Google Cloud project and enable the Google Sheets API. Then, create a service account and download the JSON key file. Rename it to `credentials.json` and place it in the [assets](./assets) directory of the project.
 Go to https://developers.google.com/workspace/guides/create-project for more information.
@@ -38,15 +49,26 @@ Go to https://developers.google.com/workspace/guides/create-project for more inf
 
 ## Usage
 
+To run the project, use the following command:
+
 ```bash
-  python main.py
+  python .\src\main.py
 ```
 
-## Optimizations
+This will open the GUI application. You can then enter your credentials and start scraping data from the Geoex system. The scraped data will be exported to a Google Sheets document.
 
-- Types for some return, like `consult_project_in_geoex`;
-- Use `concurrent.futures` or some threading features to make the code more efficient;
-- Change the way of getting variables, like projects from `load_project_list`;
+If you want to export the app as a .exe file, you can use the `pyinstaller` command. Make sure to have `pyinstaller` installed in your environment.
+
+```bash
+  pyinstaller main.spec
+```
+
+## Features
+- Scrape data from the Geoex system
+- Export data to Google Sheets
+- User-friendly GUI
+- Settings to export app as a .exe file
+
 
 ## Feedback
 
