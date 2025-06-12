@@ -27,6 +27,7 @@ class GeoexScraper:
             31: "ACEITO COM RESTRIÇÕES",
             99: "ERRO DE SUBGRUPO",
             1: "CRIADO",
+            6: "CANCELADO",
             }
     def scrape_projects_infos(
         self,
@@ -94,7 +95,9 @@ class GeoexScraper:
                                 fix_geoex_returned_date(folder_date),
                                 safe_get(result, ['response_body', 'Etiquetas', 0, 'Nome']),
                                 fix_geoex_returned_date(folder_down_date),
-                                folder_n_attempts
+                                folder_n_attempts,
+                                safe_get(result, ['response_body', 'CarteirasObras', 0, 'Carteira'],"")[:7],
+                                safe_get(result, ['response_body', 'ResponsavelCarteiraProgramacaoUsuario','Nome']),
                             ])
             progress_callback(i+1)
         SheetsPython().update_sheets_data(
@@ -222,7 +225,7 @@ class GeoexScraper:
                     rejects_at_response_observations = []
                     rejects_at_acceptance = []
                     rejects_at_acceptance_observations = []
-
+                    rejects_general_observations = safe_get(folder_rejection_details, ['response_body', 'ObservacaoValidacao'], '')
                     for item in safe_get(folder_rejection_details, ['response_body', 'Itens'], []):
                         if item['HistoricoStatusIdValidacao'] == 32:
                             rejects_at_response.append(item['EnvioPastaItem'])
@@ -241,6 +244,7 @@ class GeoexScraper:
                         acceptance_date,
                         "\n".join(rejects_at_acceptance),
                         "\n".join(rejects_at_acceptance_observations),
+                        rejects_general_observations,
                     ])
             progress_callback(i+1)
         SheetsPython().update_sheets_data(

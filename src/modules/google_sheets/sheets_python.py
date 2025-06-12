@@ -140,6 +140,7 @@ class SheetsPython:
             sheet.values().clear(spreadsheetId=id_sheets,
                                         range=range_clear).execute()
 
+        print(f'Updating Google Sheets with range: {range_sheets}')
         sheet.values().update(spreadsheetId = id_sheets,
                             range= range_sheets, valueInputOption = 'USER_ENTERED',
                             body = {"values": data_list}).execute()
